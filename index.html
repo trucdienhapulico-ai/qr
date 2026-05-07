@@ -156,9 +156,16 @@
 
     <div id="reader"></div>
 
-    <button class="btn-scan-main w-100 mb-4" id="startScan">
-        <i class="bi bi-qr-code-scan"></i> SCAN EQUIPMENT
-    </button>
+    <div class="card-premium p-3 mb-4 animate__animated animate__fadeIn">
+        <button class="btn-scan-main w-100" id="startScan">
+            <i class="bi bi-qr-code-scan"></i> SCAN EQUIPMENT
+        </button>
+        
+        <div class="mt-3 pt-3 border-top d-flex gap-2">
+            <input type="text" id="manual_uid" class="form-control border-0 bg-light p-3" style="border-radius: 14px;" placeholder="Or enter UID manually...">
+            <button class="btn btn-primary px-4" style="border-radius: 14px;" onclick="handleManualEntry()">GO</button>
+        </div>
+    </div>
 
     <div id="infoSection" style="display: none;">
         <div class="card-premium animate__animated animate__fadeInUp">
@@ -240,6 +247,18 @@
         }, 
         (err) => {});
     });
+
+    function handleManualEntry() {
+        const uid = document.getElementById('manual_uid').value.trim();
+        if (uid) {
+            document.getElementById('disp_uid').innerText = uid;
+            document.getElementById('infoSection').style.display = 'block';
+            startBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> SCAN ANOTHER';
+            fetchData(uid);
+        } else {
+            alert("Please enter a valid UID");
+        }
+    }
 
     async function fetchData(uid) {
         document.getElementById('loader').style.display = 'flex';
