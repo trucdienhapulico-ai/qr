@@ -147,23 +147,29 @@
 
 <div class="app-shell">
     <div class="header-section">
+        <div class="d-flex justify-content-end px-3">
+            <div class="btn-group btn-group-sm bg-white rounded-pill shadow-sm p-1">
+                <button class="btn btn-outline-primary border-0 rounded-pill px-3" onclick="setLanguage('vi')" id="btn-vi">VN</button>
+                <button class="btn btn-outline-primary border-0 rounded-pill px-3" onclick="setLanguage('en')" id="btn-en">EN</button>
+            </div>
+        </div>
         <div class="logo-box">
             <i class="bi bi-cpu"></i>
         </div>
-        <h2 class="fw-800 m-0 text-dark">UID QR Master</h2>
-        <p class="text-muted small mt-1">Smart Equipment Management</p>
+        <h2 class="fw-800 m-0 text-dark" data-i18n="app_title">UID QR Master</h2>
+        <p class="text-muted small mt-1" data-i18n="app_subtitle">Smart Equipment Management</p>
     </div>
 
     <div id="reader"></div>
 
     <div class="card-premium p-3 mb-4 animate__animated animate__fadeIn">
-        <button class="btn-scan-main w-100" id="startScan">
+        <button class="btn-scan-main w-100" id="startScan" data-i18n="btn_scan">
             <i class="bi bi-qr-code-scan"></i> SCAN EQUIPMENT
         </button>
         
         <div class="mt-3 pt-3 border-top d-flex gap-2">
-            <input type="text" id="manual_uid" class="form-control border-0 bg-light p-3" style="border-radius: 14px;" placeholder="Or enter UID manually...">
-            <button class="btn btn-primary px-4" style="border-radius: 14px;" onclick="handleManualEntry()">GO</button>
+            <input type="text" id="manual_uid" class="form-control border-0 bg-light p-3" style="border-radius: 14px;" placeholder="Or enter UID manually..." data-i18n-placeholder="placeholder_uid">
+            <button class="btn btn-primary px-4" style="border-radius: 14px;" onclick="handleManualEntry()" data-i18n="btn_go">GO</button>
         </div>
     </div>
 
@@ -171,7 +177,7 @@
         <div class="card-premium animate__animated animate__fadeInUp">
             <div class="info-header">
                 <div class="d-flex justify-content-between">
-                    <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">Active Device</span>
+                    <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill" data-i18n="badge_active">Active Device</span>
                     <span class="text-muted small" id="curr_time"></span>
                 </div>
                 <h4 class="fw-bold mt-3 mb-1" id="disp_name">Loading...</h4>
@@ -183,41 +189,41 @@
 
             <div class="card-body p-0">
                 <div class="p-3 bg-light-subtle">
-                    <span class="fw-bold small text-uppercase text-secondary" style="letter-spacing: 1px;">Maintenance Checklist</span>
+                    <span class="fw-bold small text-uppercase text-secondary" style="letter-spacing: 1px;" data-i18n="checklist_title">Maintenance Checklist</span>
                 </div>
                 
                 <div class="checklist-item" onclick="toggleCheck('item1')">
                     <input class="form-check-input" type="checkbox" id="item1">
                     <div>
-                        <div class="fw-bold">Power & Battery</div>
-                        <div class="small text-muted">Check voltage and connections</div>
+                        <div class="fw-bold" data-i18n="check1_title">Power & Battery</div>
+                        <div class="small text-muted" data-i18n="check1_desc">Check voltage and connections</div>
                     </div>
                 </div>
 
                 <div class="checklist-item" onclick="toggleCheck('item2')">
                     <input class="form-check-input" type="checkbox" id="item2">
                     <div>
-                        <div class="fw-bold">Mechanical Vibration</div>
-                        <div class="small text-muted">Monitor noise and heat</div>
+                        <div class="fw-bold" data-i18n="check2_title">Mechanical Vibration</div>
+                        <div class="small text-muted" data-i18n="check2_desc">Monitor noise and heat</div>
                     </div>
                 </div>
 
                 <div class="checklist-item" onclick="toggleCheck('item3')">
                     <input class="form-check-input" type="checkbox" id="item3">
                     <div>
-                        <div class="fw-bold">Clean & Lubricate</div>
-                        <div class="small text-muted">Remove dust and apply grease</div>
+                        <div class="fw-bold" data-i18n="check3_title">Clean & Lubricate</div>
+                        <div class="small text-muted" data-i18n="check3_desc">Remove dust and apply grease</div>
                     </div>
                 </div>
 
                 <div class="p-4 border-top">
-                    <label class="fw-bold small text-secondary mb-2">FIELD NOTES</label>
-                    <textarea class="form-control border-0 bg-light p-3" id="notes" rows="3" style="border-radius: 12px;" placeholder="Add technical observations..."></textarea>
+                    <label class="fw-bold small text-secondary mb-2" data-i18n="field_notes">FIELD NOTES</label>
+                    <textarea class="form-control border-0 bg-light p-3" id="notes" rows="3" style="border-radius: 12px;" placeholder="Add technical observations..." data-i18n-placeholder="placeholder_notes"></textarea>
                 </div>
             </div>
         </div>
 
-        <button class="btn-submit" onclick="submitData()">
+        <button class="btn-submit" onclick="submitData()" data-i18n="btn_complete">
             COMPLETE INSPECTION <i class="bi bi-check-circle ms-2"></i>
         </button>
     </div>
@@ -227,6 +233,101 @@
     const scanner = new Html5Qrcode("reader");
     const startBtn = document.getElementById('startScan');
     let gasUrl = 'https://script.google.com/macros/s/AKfycby_SAMPLE_URL/exec'; 
+
+    const translations = {
+        vi: {
+            app_title: "Hệ thống UID-QR",
+            app_subtitle: "Quản lý bảo trì thiết bị thông minh",
+            btn_scan: "QUÉT MÃ THIẾT BỊ",
+            placeholder_uid: "Hoặc nhập UID bằng tay...",
+            btn_go: "GỬI",
+            badge_active: "Thiết bị đang chạy",
+            checklist_title: "DANH MỤC KIỂM TRA",
+            check1_title: "Nguồn & Pin",
+            check1_desc: "Kiểm tra điện áp và kết nối",
+            check2_title: "Rung động cơ học",
+            check2_desc: "Theo dõi tiếng ồn và nhiệt độ",
+            check3_title: "Vệ sinh & Bôi trơn",
+            check3_desc: "Làm sạch bụi và tra mỡ",
+            field_notes: "GHI CHÚ KỸ THUẬT",
+            placeholder_notes: "Nhập quan sát thực tế...",
+            btn_complete: "XÁC NHẬN HOÀN TẤT",
+            scan_another: "QUÉT THIẾT BỊ KHÁC",
+            alert_invalid_uid: "Vui lòng nhập UID hợp lệ",
+            alert_conn_error: "Lỗi kết nối",
+            alert_success: "Thành công! Nhật ký bảo trì của {uid} đã được lưu."
+        },
+        en: {
+            app_title: "UID QR Master",
+            app_subtitle: "Smart Equipment Management",
+            btn_scan: "SCAN EQUIPMENT",
+            placeholder_uid: "Or enter UID manually...",
+            btn_go: "GO",
+            badge_active: "Active Device",
+            checklist_title: "Maintenance Checklist",
+            check1_title: "Power & Battery",
+            check1_desc: "Check voltage and connections",
+            check2_title: "Mechanical Vibration",
+            check2_desc: "Monitor noise and heat",
+            check3_title: "Clean & Lubricate",
+            check3_desc: "Remove dust and apply grease",
+            field_notes: "FIELD NOTES",
+            placeholder_notes: "Add technical observations...",
+            btn_complete: "COMPLETE INSPECTION",
+            scan_another: "SCAN ANOTHER",
+            alert_invalid_uid: "Please enter a valid UID",
+            alert_conn_error: "Connection error",
+            alert_success: "Success! Maintenance record for {uid} saved."
+        }
+    };
+
+    let currentLang = localStorage.getItem('lang') || 'vi';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('lang', lang);
+        
+        // Update elements with data-i18n
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[lang][key]) {
+                // If the element has children (like icons), we need to preserve them
+                const icon = el.querySelector('i');
+                if (icon) {
+                    el.innerHTML = '';
+                    el.appendChild(icon);
+                    el.appendChild(document.createTextNode(' ' + translations[lang][key]));
+                } else {
+                    el.innerText = translations[lang][key];
+                }
+            }
+        });
+
+        // Update placeholders
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (translations[lang][key]) {
+                el.placeholder = translations[lang][key];
+            }
+        });
+
+        // Update button states
+        document.getElementById('btn-vi').classList.toggle('btn-primary', lang === 'vi');
+        document.getElementById('btn-vi').classList.toggle('text-white', lang === 'vi');
+        document.getElementById('btn-vi').classList.toggle('btn-outline-primary', lang !== 'vi');
+        
+        document.getElementById('btn-en').classList.toggle('btn-primary', lang === 'en');
+        document.getElementById('btn-en').classList.toggle('text-white', lang === 'en');
+        document.getElementById('btn-en').classList.toggle('btn-outline-primary', lang !== 'en');
+
+        // Update Scan Another button text if active
+        if (startBtn.innerHTML.includes('bi-arrow-repeat')) {
+            startBtn.innerHTML = `<i class="bi bi-arrow-repeat"></i> ${translations[lang].scan_another}`;
+        }
+    }
+
+    // Initialize language
+    setLanguage(currentLang);
 
     function toggleCheck(id) {
         const cb = document.getElementById(id);
@@ -241,7 +342,7 @@
             document.getElementById('disp_uid').innerText = uid;
             document.getElementById('infoSection').style.display = 'block';
             reader.style.display = 'none';
-            startBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> SCAN ANOTHER';
+            startBtn.innerHTML = `<i class="bi bi-arrow-repeat"></i> ${translations[currentLang].scan_another}`;
             scanner.stop();
             fetchData(uid);
         }, 
@@ -253,10 +354,10 @@
         if (uid) {
             document.getElementById('disp_uid').innerText = uid;
             document.getElementById('infoSection').style.display = 'block';
-            startBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> SCAN ANOTHER';
+            startBtn.innerHTML = `<i class="bi bi-arrow-repeat"></i> ${translations[currentLang].scan_another}`;
             fetchData(uid);
         } else {
-            alert("Please enter a valid UID");
+            alert(translations[currentLang].alert_invalid_uid);
         }
     }
 
@@ -271,7 +372,7 @@
                 document.getElementById('curr_time').innerText = new Date().toLocaleTimeString();
             }, 800);
         } catch (e) {
-            alert("Connection error");
+            alert(translations[currentLang].alert_conn_error);
             document.getElementById('loader').style.display = 'none';
         }
     }
@@ -283,7 +384,7 @@
         // Simulating submission
         setTimeout(() => {
             document.getElementById('loader').style.display = 'none';
-            alert("Success! Maintenance record for " + uid + " saved to Google Sheets.");
+            alert(translations[currentLang].alert_success.replace('{uid}', uid));
             location.reload();
         }, 1500);
     }
