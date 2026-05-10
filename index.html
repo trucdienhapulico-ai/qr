@@ -123,13 +123,20 @@
 
 <!-- Login Overlay -->
 <div id="loginOverlay">
+    <div class="d-flex justify-content-end px-3 pt-3" style="position: absolute; top: 0; right: 0; z-index: 10000;">
+        <div class="btn-group btn-group-sm bg-white rounded-pill shadow-sm p-1" id="loginLangToggle">
+            <button class="btn btn-outline-primary border-0 rounded-pill px-3" onclick="setLanguage('vi')" id="login-btn-vi">VN</button>
+            <button class="btn btn-outline-primary border-0 rounded-pill px-3" onclick="setLanguage('en')" id="login-btn-en">EN</button>
+        </div>
+    </div>
     <div class="login-card">
         <div class="logo-box mx-auto mb-3" style="width: 60px; height: 60px; font-size: 28px;"><i class="bi bi-shield-lock"></i></div>
         <h3 class="fw-bold text-dark mb-1">UID Master</h3>
-        <p class="text-muted small mb-4">Enter PIN to access your workspace</p>
-        <input type="password" id="pinInput" class="form-control text-center fs-4 fw-bold mb-3" style="letter-spacing: 10px; border-radius: 12px; padding: 15px;" placeholder="••••" maxlength="6">
+        <p class="text-muted small mb-4" id="loginSubtitle">Đăng nhập để truy cập hệ thống</p>
+        <input type="text" id="usernameInput" class="form-control mb-3" style="border-radius: 12px; padding: 14px 18px;" placeholder="Tên đăng nhập">
+        <input type="password" id="passwordInput" class="form-control mb-3" style="border-radius: 12px; padding: 14px 18px;" placeholder="Mật khẩu (PIN)">
         <button id="btnLogin" class="btn btn-primary w-100 py-3 rounded-pill fw-bold" onclick="doLogin()">
-            LOGIN <i class="bi bi-arrow-right ms-2"></i>
+            ĐĂNG NHẬP <i class="bi bi-box-arrow-in-right ms-2"></i>
         </button>
         <div id="loginSpinner" class="spinner-border text-primary mt-3" style="display: none;" role="status"></div>
     </div>
@@ -468,14 +475,15 @@
     }
 
     async function doLogin() {
-        const pin = document.getElementById('pinInput').value;
-        if (!pin) { showToast("Vui lòng nhập mã PIN", "warning"); return; }
+        const username = document.getElementById('usernameInput').value.trim();
+        const password = document.getElementById('passwordInput').value;
+        if (!username || !password) { showToast("Vui lòng nhập tên và mật khẩu", "warning"); return; }
         
         document.getElementById('btnLogin').style.display = 'none';
         document.getElementById('loginSpinner').style.display = 'inline-block';
 
         try {
-            const res = await fetch(`${gasUrl}?action=login&pin=${pin}&token=${API_TOKEN}`);
+            const res = await fetch(`${gasUrl}?action=login&username=${encodeURIComponent(username)}&pin=${encodeURIComponent(password)}&token=${API_TOKEN}`);
             const result = await res.json();
             if (result.status === "success") {
                 localStorage.setItem('currentUser', JSON.stringify(result.user));
@@ -483,7 +491,7 @@
                 updateUI(result.user);
                 showToast(`Xin chào ${result.user.name} (${result.user.role})`);
             } else {
-                showToast(result.message || "Mã PIN không hợp lệ", "danger");
+                showToast(result.message || "Sai tên hoặc mật khẩu", "danger");
                 document.getElementById('btnLogin').style.display = 'block';
                 document.getElementById('loginSpinner').style.display = 'none';
             }

@@ -9,16 +9,61 @@
  * 5. Paste this code and Deploy as Web App (Execute as: Me, Access: Anyone).
  */
 
-const SHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+const SHEET_ID = "1aK1KMrG5Bn4hYy-QSS5SAST_Xl4Ta_hCbVmqyHXJjUo";
 const API_TOKEN = "HAPU_QR_SECRET_2026"; // Simple security token
 
 function doGet(e) {
   const token = e.parameter.token;
   const uid = e.parameter.uid;
+  const action = e.parameter.action;
 
   // Security Check
   if (token !== API_TOKEN) {
     return contentResponse({ status: "error", message: "Unauthorized access" });
+  }
+
+  if (action === 'login') {
+    const pin = e.parameter.pin;
+    const username = e.parameter.username;
+    if (!pin || !username) return contentResponse({ status: "error", message: "Missing credentials" });
+
+    const userSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Users");
+    if (!userSheet) return contentResponse({ status: "error", message: "Users sheet not found" });
+    const users = userSheet.getDataRange().getValues();
+    let userRole = null; let userName = null;
+    
+    // Check Username + PIN (Users sheet: A=Username, B=PIN, C=Role)
+    for (let i = 1; i < users.length; i++) {
+      if (String(users[i][0]).trim().toLowerCase() === String(username).trim().toLowerCase() 
+          && String(users[i][1]) == String(pin)) {
+        userName = users[i][0];
+        userRole = users[i][2];
+        break;
+      }
+    }
+
+    if (!userRole) return contentResponse({ status: "error", message: "Sai tên đăng nhập hoặc mật khẩu" });
+
+    // Preload devices
+    const devSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Devices");
+    const devData = devSheet.getDataRange().getValues();
+    let devices = [];
+    for (let i = 1; i < devData.length; i++) {
+      devices.push({
+        uid: devData[i][0],
+        name: devData[i][1],
+        location: devData[i][2],
+        specs: devData[i][3] || "N/A",
+        cycle: devData[i][4] || 30,
+        nextMaintenance: devData[i][5] || ""
+      });
+    }
+
+    return contentResponse({ 
+      status: "success", 
+      user: { name: userName, role: userRole },
+      devices: devices 
+    });
   }
 
   if (!uid) return contentResponse({ status: "error", message: "Missing UID" });
