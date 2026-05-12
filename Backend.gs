@@ -302,14 +302,37 @@ function doPost(e) {
       return contentResponse({ status: "success", updated: updated });
     }
 
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Logs");
+    // Default Action: Check-list submission with optional Image
+    const logSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Logs");
+    
+    let imageUrl = "";
+    if (params.image && params.image.base64) {
+      try {
+        // Find or Create Folder
+        const folderName = "QR_Maintenance_Images";
+        let folders = DriveApp.getFoldersByName(folderName);
+        let folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+        
+        // Save Image
+        const contentType = params.image.mimeType || "image/jpeg";
+        const decodeData = Utilities.base64Decode(params.image.base64);
+        const blob = Utilities.newBlob(decodeData, contentType, "IMG_" + params.uid + "_" + new Date().getTime());
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        imageUrl = file.getUrl();
+      } catch (err) {
+        // Fallback if Drive fails
+        imageUrl = "Error saving image: " + err.toString();
+      }
+    }
 
-    sheet.appendRow([
+    logSheet.appendRow([
       new Date(),
       params.uid,
       JSON.stringify(params.items),
       params.notes,
-      "Mobile User"
+      params.user || "Mobile User",
+      imageUrl // Column F: Image URL
     ]);
 
     // Update Next Maintenance Date based on Cycle

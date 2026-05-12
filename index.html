@@ -408,6 +408,20 @@
                 </div>
             </div>
             <div class="card-body p-0">
+                <div class="p-3">
+                    <label class="form-label fw-bold small text-muted text-uppercase mb-2">Hình ảnh đính kèm (Tùy chọn)</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-outline-primary rounded-pill px-3" onclick="document.getElementById('imageInput').click()">
+                            <i class="bi bi-camera-fill me-1"></i> Chụp ảnh
+                        </button>
+                        <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImage(event)">
+                        <div id="imagePreviewContainer" style="display: none; position: relative;">
+                            <img id="imagePreview" src="" class="rounded-3 shadow-sm" style="height: 60px; width: 60px; object-fit: cover;">
+                            <button class="btn btn-danger btn-sm rounded-circle position-absolute" style="top: -10px; right: -10px; padding: 0 5px;" onclick="clearImage()">×</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="p-3 bg-light-subtle"><span class="fw-bold small text-uppercase text-secondary" data-i18n="checklist_title">Maintenance Checklist</span></div>
                 <div id="dynamicChecklist">
                     <!-- Checklists will be rendered here dynamically based on device type -->
@@ -693,6 +707,45 @@
         }
     }
 
+    let currentImageData = null;
+
+    async function handleImage(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                // Resize image to max 800px to avoid GAS limits
+                const canvas = document.createElement('canvas');
+                let width = img.width, height = img.height;
+                const max = 800;
+                if (width > height) { if (width > max) { height *= max / width; width = max; } }
+                else { if (height > max) { width *= max / height; height = max; } }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const base64 = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+                currentImageData = {
+                    base64: base64.split(',')[1],
+                    mimeType: 'image/jpeg'
+                };
+                document.getElementById('imagePreview').src = base64;
+                document.getElementById('imagePreviewContainer').style.display = 'block';
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+        currentImageData = null;
+        document.getElementById('imageInput').value = '';
+        document.getElementById('imagePreviewContainer').style.display = 'none';
+    }
+
     async function submitData() {
         const uid = document.getElementById('disp_uid').innerText;
         
@@ -704,7 +757,9 @@
 
         const data = { 
             uid, token: API_TOKEN, notes: document.getElementById('notes').value,
-            items: items
+            items: items,
+            image: currentImageData,
+            user: JSON.parse(localStorage.getItem('currentUser') || '{}').name
         };
         try {
             await fetch(gasUrl, { method: 'POST', body: JSON.stringify(data) });
