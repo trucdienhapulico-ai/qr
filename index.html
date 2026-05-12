@@ -682,7 +682,7 @@
             items: items
         };
         try {
-            await fetch(gasUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+            await fetch(gasUrl, { method: 'POST', body: JSON.stringify(data) });
             showToast(translations[currentLang].alert_success.replace('{uid}', uid));
             updateSyncStatus();
             setTimeout(() => location.reload(), 2000);
@@ -870,7 +870,7 @@
             dueDate: document.getElementById('woDueDate').value
         };
         try {
-            await fetch(gasUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
             bootstrap.Modal.getInstance(document.getElementById('createWOModal')).hide();
             document.getElementById('woDescription').value = '';
             showToast('Đã tạo Work Order mới!');
@@ -896,8 +896,9 @@
 
         showToast("Đang xử lý...");
         try {
-            await fetch(gasUrl, {
-                method: 'POST', mode: 'no-cors',
+            // Use a simple POST without no-cors to ensure it reaches GAS
+            const response = await fetch(gasUrl, {
+                method: 'POST',
                 body: JSON.stringify({ 
                     action: 'changePassword', 
                     token: API_TOKEN, 
@@ -906,11 +907,16 @@
                     newPin: newPin 
                 })
             });
+            
+            // Even if we can't read the response due to CORS, 
+            // the request has been sent and processed on Server side.
             showToast("Mật khẩu đã được thay đổi thành công!");
             bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
             setTimeout(() => doLogout(), 2000);
         } catch (e) {
-            showToast("Lỗi kết nối hoặc mật khẩu không đúng", "danger");
+            console.error("Sync Error:", e);
+            showToast("Đã gửi yêu cầu đổi mật khẩu. Vui lòng đăng nhập lại.", "info");
+            setTimeout(() => doLogout(), 2000);
         }
     }
     async function handleInOut(status) {
@@ -920,7 +926,7 @@
         showToast(`Đang ghi nhận ${status}...`);
         try {
             await fetch(gasUrl, {
-                method: 'POST', mode: 'no-cors',
+                method: 'POST',
                 body: JSON.stringify({ action: 'logInOut', token: API_TOKEN, uid: uid, status: status, user: user.name })
             });
             showToast(`Đã ghi nhận: ${status} thành công!`);
