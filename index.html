@@ -446,6 +446,10 @@
                             </ul>
                         </div>
                     </div>
+                    <!-- Mini Log Placeholder -->
+                    <div id="miniLogContainer" class="mt-2 border-top pt-3">
+                        <div class="text-center text-muted small py-3"><div class="spinner-border spinner-border-sm me-2"></div> Đang tải lịch sử...</div>
+                    </div>
                 </div>
                 <div class="p-4 border-top"><label class="fw-bold small text-secondary mb-2" data-i18n="field_notes">FIELD NOTES</label><textarea class="form-control border-0 bg-light p-3" id="notes" rows="3" style="border-radius: 12px;" placeholder="Add observations..." data-i18n-placeholder="placeholder_notes"></textarea></div>
             </div>
@@ -774,6 +778,7 @@
                 }
 
                 renderChecklist(device.name.toLowerCase().includes('điều hòa') ? 'hvac' : 'default');
+                fetchHistory(uid); // Fetch Mini Log
                 
                 document.getElementById('curr_time').innerText = new Date().toLocaleTimeString();
                 document.getElementById('infoSection').style.display = 'block';
@@ -826,6 +831,41 @@
         currentImageData = null;
         document.getElementById('imageInput').value = '';
         document.getElementById('imagePreviewContainer').style.display = 'none';
+    }
+
+    async function fetchHistory(uid) {
+        const container = document.getElementById('miniLogContainer');
+        try {
+            const resp = await fetch(`${gasUrl}?action=getDeviceHistory&uid=${uid}&token=${API_TOKEN}`);
+            const data = await resp.json();
+            if (data.status === 'success' && data.history.length > 0) {
+                let html = '<ul class="list-unstyled mb-0" style="font-size: 0.85rem;">';
+                data.history.forEach(log => {
+                    const date = new Date(log.time).toLocaleDateString('vi-VN');
+                    const isMove = log.action === 'IN' || log.action === 'OUT';
+                    const icon = log.action === 'IN' ? 'bi-box-arrow-in-right text-success' : (log.action === 'OUT' ? 'bi-box-arrow-right text-warning' : 'bi-check2-circle text-primary');
+                    const actionLabel = isMove ? log.action : 'Bảo trì';
+                    
+                    html += `
+                        <li class="mb-2 d-flex gap-2">
+                            <i class="bi ${icon}"></i>
+                            <div class="flex-fill">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-bold">${actionLabel}</span>
+                                    <span class="text-muted" style="font-size: 0.75rem;">${date}</span>
+                                </div>
+                                <div class="text-muted small">${log.notes || 'Không có ghi chú'} - <span class="text-dark">${log.user}</span></div>
+                            </div>
+                        </li>`;
+                });
+                html += '</ul>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-muted small text-center mb-0">Chưa có lịch sử hoạt động</p>';
+            }
+        } catch (e) {
+            container.innerHTML = '<p class="text-danger small text-center mb-0">Không thể tải lịch sử</p>';
+        }
     }
 
     async function submitData() {
