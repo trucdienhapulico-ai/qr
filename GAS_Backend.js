@@ -244,6 +244,36 @@ function doPost(e) {
       return contentResponse({ status: "success" });
     }
 
+    // action=changePassword — Change user PIN in Users sheet
+    if (params.action === 'changePassword') {
+      const userSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Users");
+      if (!userSheet) return contentResponse({ status: "error", message: "Users sheet not found" });
+
+      const users = userSheet.getDataRange().getValues();
+      let foundIndex = -1;
+      
+      // Find user and verify old password (Username: Col A, PIN: Col B)
+      for (let i = 1; i < users.length; i++) {
+        if (String(users[i][0]).trim().toLowerCase() === String(params.username).trim().toLowerCase() 
+            && String(users[i][1]) == String(params.oldPin)) {
+          foundIndex = i + 1;
+          break;
+        }
+      }
+
+      if (foundIndex === -1) {
+        return contentResponse({ status: "error", message: "Mật khẩu cũ không chính xác" });
+      }
+
+      // Update password
+      userSheet.getRange(foundIndex, 2).setValue(params.newPin);
+      
+      // Log the event
+      writeAuditLog(params.username, 'changePassword', params.username, 'User changed their own password');
+
+      return contentResponse({ status: "success" });
+    }
+
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Logs");
 
     sheet.appendRow([

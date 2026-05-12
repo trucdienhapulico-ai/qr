@@ -161,6 +161,7 @@
                             </div>
                         </li>
                         <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showChangePasswordModal()"><i class="bi bi-key me-2"></i>Đổi mật khẩu</a></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="doLogout()"><i class="bi bi-box-arrow-left me-2"></i>Đăng xuất</a></li>
                     </ul>
                 </div>
@@ -312,7 +313,37 @@
         </div>
     </div>
 
-    <!-- Search & Filter Section -->
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-shield-lock me-2 text-primary"></i>Đổi mật khẩu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Mật khẩu hiện tại</label>
+                        <input type="password" class="form-control rounded-3" id="oldPin" placeholder="••••••">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Mật khẩu mới</label>
+                        <input type="password" class="form-control rounded-3" id="newPin" placeholder="Mật khẩu mới">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Xác nhận mật khẩu mới</label>
+                        <input type="password" class="form-control rounded-3" id="confirmPin" placeholder="Xác nhận mật khẩu mới">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" onclick="submitChangePassword()">
+                        <i class="bi bi-check-lg me-1"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="card-premium p-3 mb-4" id="searchSection" style="display: none;">
         <h6 class="fw-bold mb-2">Advanced Search</h6>
         <div class="input-group mb-2">
@@ -816,6 +847,40 @@
             setTimeout(() => loadKanban(), 1500);
         } catch (e) {
             showToast('Lỗi tạo WO, kiểm tra kết nối', 'danger');
+        }
+    }
+
+    function showChangePasswordModal() {
+        new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
+    }
+
+    async function submitChangePassword() {
+        const oldPin = document.getElementById('oldPin').value;
+        const newPin = document.getElementById('newPin').value;
+        const confirmPin = document.getElementById('confirmPin').value;
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+
+        if (!oldPin || !newPin || !confirmPin) { showToast("Vui lòng điền đủ thông tin", "warning"); return; }
+        if (newPin !== confirmPin) { showToast("Mật khẩu mới không khớp", "warning"); return; }
+        if (newPin.length < 4) { showToast("Mật khẩu phải ít nhất 4 ký tự", "warning"); return; }
+
+        showToast("Đang xử lý...");
+        try {
+            await fetch(gasUrl, {
+                method: 'POST', mode: 'no-cors',
+                body: JSON.stringify({ 
+                    action: 'changePassword', 
+                    token: API_TOKEN, 
+                    username: user.name, 
+                    oldPin: oldPin, 
+                    newPin: newPin 
+                })
+            });
+            showToast("Mật khẩu đã được thay đổi thành công!");
+            bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+            setTimeout(() => doLogout(), 2000);
+        } catch (e) {
+            showToast("Lỗi kết nối hoặc mật khẩu không đúng", "danger");
         }
     }
 </script>
