@@ -56,17 +56,17 @@ function doGet(e) {
   try {
     if (action === 'login') {
     const pin = e.parameter.pin;
-    const username = e.parameter.username;
-    if (!pin || !username) return contentResponse({ status: "error", message: "Missing credentials" });
+    const user = e.parameter.user; // Đã sửa từ username thành user
+    if (!pin || !user) return contentResponse({ status: "error", message: "Missing credentials" });
 
     const userSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Users");
     if (!userSheet) return contentResponse({ status: "error", message: "Users sheet not found" });
     const users = userSheet.getDataRange().getValues();
     let userRole = null; let userName = null;
     
-    // Check Username + PIN (Users sheet: A=Username, B=PIN, C=Role)
+    // Check User + PIN (Users sheet: A=Username, B=PIN, C=Role)
     for (let i = 1; i < users.length; i++) {
-      if (String(users[i][0]).trim().toLowerCase() === String(username).trim().toLowerCase() 
+      if (String(users[i][0]).trim().toLowerCase() === String(user).trim().toLowerCase() 
           && String(users[i][1]) == String(pin)) {
         userName = users[i][0];
         userRole = users[i][2];
@@ -75,6 +75,9 @@ function doGet(e) {
     }
 
     if (!userRole) return contentResponse({ status: "error", message: "Sai tên đăng nhập hoặc mật khẩu" });
+
+    // Ghi log đăng nhập thành công
+    writeAuditLog(userName, "Login", "Web App", "Đăng nhập thành công");
 
     // Preload devices
     const devSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Devices");
