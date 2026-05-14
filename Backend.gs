@@ -80,7 +80,7 @@ function doGet(e) {
         writeAuditLog(userName, "Login", "Web App", "Đăng nhập thành công");
         
         const devices = ss.getSheetByName("Devices").getDataRange().getValues().slice(1)
-          .map(r => ({ uid: r[0], name: r[1], location: r[2], specs: r[3], cycle: r[4], status: r[6] }));
+          .map(r => ({ uid: r[0], name: r[1], location: r[2], specs: r[3], cycle: r[4], nextMaintenance: r[5], status: r[6] }));
         const checkSheet = ss.getSheetByName("Checklists");
         const checklists = checkSheet ? checkSheet.getDataRange().getValues().slice(1).map(r => ({ type: r[0], id: r[1], title: r[2], desc: r[3] })) : [];
 
@@ -107,9 +107,29 @@ function doGet(e) {
         })).filter(wo => (role !== 'Technician' || !username || String(wo.assignedTo).toLowerCase() === String(username).toLowerCase()));
         return contentResponse({ status: "success", workOrders: workOrders });
 
-      case 'debug_get_users':
-        const debugData = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Users").getDataRange().getValues();
-        return contentResponse({ status: "success", users: debugData });
+
+      case 'getMaintenanceDue':
+        const dmSS = SpreadsheetApp.openById(SHEET_ID);
+        const dmData = dmSS.getSheetByName("Devices").getDataRange().getValues().slice(1);
+        const dmToday = new Date();
+        dmToday.setHours(0, 0, 0, 0);
+        const dmSchedule = dmData
+          .filter(r => r[0])
+          .map(r => {
+            const rawNext = r[5];
+            let nextMaintenance = null, daysUntil = null, scheduleStatus = 'never';
+            if (rawNext) {
+              const nextDate = new Date(rawNext);
+              if (!isNaN(nextDate)) {
+                nextDate.setHours(0, 0, 0, 0);
+                nextMaintenance = Utilities.formatDate(nextDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+                daysUntil = Math.round((nextDate - dmToday) / (1000 * 60 * 60 * 24));
+                scheduleStatus = daysUntil < 0 ? 'overdue' : (daysUntil <= 3 ? 'due_soon' : 'scheduled');
+              }
+            }
+            return { uid: r[0], name: r[1], location: r[2], cycle: r[4], nextMaintenance, daysUntil, scheduleStatus };
+          });
+        return contentResponse({ status: 'success', data: dmSchedule });
 
       default:
         // Default action: Get Single Device Data

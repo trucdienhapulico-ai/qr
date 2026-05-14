@@ -221,28 +221,15 @@
 
     <!-- Calendar Section -->
     <div id="calendarSection" class="card-premium p-3 mb-4" style="display: none;">
-        <h5 class="fw-bold mb-3"><i class="bi bi-calendar-check"></i> Lịch Bảo Trì (PM)</h5>
-        <div class="list-group">
-            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-bold">Điều hòa trung tâm (HAPU001)</h6>
-                    <small class="text-muted">Hạn cuối: Hôm nay</small>
-                </div>
-                <span class="badge bg-danger rounded-pill">Urgent</span>
-            </div>
-            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-bold">Thang máy số 2 (HAPU005)</h6>
-                    <small class="text-muted">Hạn cuối: Ngày mai</small>
-                </div>
-                <span class="badge bg-warning text-dark rounded-pill">Due Soon</span>
-            </div>
-            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-bold">Máy bơm nước PCCC (HAPU012)</h6>
-                    <small class="text-muted">Hạn cuối: 15/05/2026</small>
-                </div>
-                <span class="badge bg-success rounded-pill">Scheduled</span>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-calendar-check"></i> Lịch Bảo Trì (PM)</h5>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="loadMaintenanceSchedule(true)">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+        <div id="maintenanceList">
+            <div class="text-center text-muted small py-3">
+                <div class="spinner-border spinner-border-sm me-2 text-primary"></div> Đang tải...
             </div>
         </div>
     </div>
@@ -613,7 +600,138 @@
         document.getElementById('dashboardSection').style.display = 'none';
         document.getElementById('kanbanSection').style.display = 'none';
         const cal = document.getElementById('calendarSection');
-        cal.style.display = cal.style.display === 'none' ? 'block' : 'none';
+        if (cal.style.display === 'none') {
+            cal.style.display = 'block';
+            loadMaintenanceSchedule();
+        } else {
+            cal.style.display = 'none';
+        }
+    }
+
+    async function loadMaintenanceSchedule(forceRefresh = false) {
+        const container = document.getElementById('maintenanceList');
+        const deviceMap = JSON.parse(localStorage.getItem('localDevicesMap') || '{}');
+        const cached = Object.values(deviceMap);
+
+        if (cached.length > 0 && !forceRefresh) {
+            renderMaintenanceList(cached);
+        } else {
+            container.innerHTML = '<div class="text-center text-muted small py-3"><div class="spinner-border spinner-border-sm me-2 text-primary"></div> Đang tải...</div>';
+        }
+
+        try {
+            const res = await fetch(`${gasUrl}?action=getMaintenanceDue&token=${API_TOKEN}`);
+            const result = await res.json();
+            if (result.status === 'success' && result.data) {
+                const updatedMap = {};
+                result.data.forEach(d => { updatedMap[d.uid] = { ...(deviceMap[d.uid] || {}), ...d }; });
+                localStorage.setItem('localDevicesMap', JSON.stringify(updatedMap));
+                renderMaintenanceList(result.data);
+            }
+        } catch (e) {
+            if (cached.length === 0) {
+                container.innerHTML = '<div class="text-center text-warning small py-3"><i class="bi bi-wifi-off me-2"></i>Offline — không có cache</div>';
+            }
+        }
+    }
+
+    function renderMaintenanceList(devices) {
+        const container = document.getElementById('maintenanceList');
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+
+        const withStatus = devices
+            .filter(d => d.uid)
+            .map(d => {
+                const rawNext = d.nextMaintenance;
+                let daysUntil = null, scheduleStatus = 'never';
+                if (rawNext) {
+                    const nextDate = new Date(rawNext);
+                    if (!isNaN(nextDate)) {
+                        nextDate.setHours(0, 0, 0, 0);
+                        daysUntil = Math.round((nextDate - today) / (1000 * 60 * 60 * 24));
+                        scheduleStatus = daysUntil < 0 ? 'overdue' : (daysUntil <= 3 ? 'due_soon' : 'scheduled');
+                    }
+                }
+                // use pre-computed values from backend if available
+                return { ...d, daysUntil: d.daysUntil ?? daysUntil, scheduleStatus: d.scheduleStatus ?? scheduleStatus };
+            })
+            .sort((a, b) => {
+                const order = { overdue: 0, due_soon: 1, never: 2, scheduled: 3 };
+                return (order[a.scheduleStatus] ?? 4) - (order[b.scheduleStatus] ?? 4);
+            });
+
+        if (withStatus.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted small py-3"><i class="bi bi-inbox me-2"></i>Không có dữ liệu thiết bị</div>';
+            return;
+        }
+
+        const overdueCount = withStatus.filter(d => d.scheduleStatus === 'overdue').length;
+        const dueSoonCount = withStatus.filter(d => d.scheduleStatus === 'due_soon').length;
+
+        let html = '';
+        if (overdueCount > 0 || dueSoonCount > 0) {
+            html += '<div class="d-flex gap-2 mb-3 flex-wrap">';
+            if (overdueCount > 0) html += `<span class="badge bg-danger rounded-pill px-3 py-2"><i class="bi bi-exclamation-circle me-1"></i>${overdueCount} Quá hạn</span>`;
+            if (dueSoonCount > 0) html += `<span class="badge bg-warning text-dark rounded-pill px-3 py-2"><i class="bi bi-clock me-1"></i>${dueSoonCount} Sắp đến hạn</span>`;
+            html += '</div>';
+        }
+
+        html += '<div class="list-group">';
+        withStatus.forEach(d => {
+            let badgeClass, badgeText, dateText;
+            const cycle = d.cycle || 30;
+            switch (d.scheduleStatus) {
+                case 'overdue':
+                    badgeClass = 'bg-danger';
+                    badgeText = `Quá ${Math.abs(d.daysUntil)}n`;
+                    dateText = `Hạn: ${new Date(d.nextMaintenance).toLocaleDateString('vi-VN')}`;
+                    break;
+                case 'due_soon':
+                    badgeClass = 'bg-warning text-dark';
+                    badgeText = d.daysUntil === 0 ? 'Hôm nay' : `Còn ${d.daysUntil}n`;
+                    dateText = `Hạn: ${new Date(d.nextMaintenance).toLocaleDateString('vi-VN')}`;
+                    break;
+                case 'scheduled':
+                    badgeClass = 'bg-success';
+                    badgeText = `Còn ${d.daysUntil}n`;
+                    dateText = `Hạn: ${new Date(d.nextMaintenance).toLocaleDateString('vi-VN')}`;
+                    break;
+                default:
+                    badgeClass = 'bg-secondary';
+                    badgeText = 'Chưa BT';
+                    dateText = `Chu kỳ: ${cycle}n`;
+            }
+            const canCreateWO = d.scheduleStatus === 'overdue' || d.scheduleStatus === 'due_soon';
+            const safeName = (d.name || d.uid).replace(/'/g, "\\'");
+            html += `
+                <div class="list-group-item p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-fill me-2">
+                            <h6 class="mb-0 fw-bold" style="font-size:0.88rem;">${d.name || d.uid} <span class="text-muted fw-normal">(${d.uid})</span></h6>
+                            <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>${d.location || '—'} · ${dateText}</small>
+                        </div>
+                        <span class="badge ${badgeClass} rounded-pill" style="font-size:0.68rem;white-space:nowrap;">${badgeText}</span>
+                    </div>
+                    ${canCreateWO ? `<div class="mt-2"><button class="btn btn-outline-danger btn-sm rounded-pill px-3" style="font-size:0.75rem;" onclick="createWOFromSchedule('${d.uid}','${safeName}')"><i class="bi bi-wrench me-1"></i>Tạo WO bảo trì</button></div>` : ''}
+                </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function createWOFromSchedule(uid, deviceName) {
+        const deviceMap = JSON.parse(localStorage.getItem('localDevicesMap') || '{}');
+        const allDevices = Object.values(deviceMap);
+        const sel = document.getElementById('woAsset');
+        sel.innerHTML = '<option value="">-- Chọn thiết bị --</option>';
+        allDevices.forEach(d => { sel.innerHTML += `<option value="${d.uid}">${d.name || d.uid} (${d.uid})</option>`; });
+        sel.value = uid;
+        document.getElementById('woType').value = 'Preventive';
+        document.getElementById('woPriority').value = 'High';
+        document.getElementById('woDescription').value = `Bảo trì định kỳ thiết bị ${deviceName} (${uid}) theo lịch PM.`;
+        const due = new Date(); due.setDate(due.getDate() + 2);
+        document.getElementById('woDueDate').value = due.toISOString().split('T')[0];
+        new bootstrap.Modal(document.getElementById('createWOModal')).show();
     }
 
     function renderChecklist(type) {

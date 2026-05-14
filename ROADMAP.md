@@ -2,45 +2,51 @@
 
 > Module quét QR báo cáo bảo trì độc lập. Nhanh, nhẹ, và không phụ thuộc server cục bộ lúc nhập liệu.
 
-**Status**: Active
-**Last Updated**: 2026-05-12
+**Status**: Active (Stable v2.3.0)
+**Last Updated**: 2026-05-14
 
 ## 🎯 Tầm nhìn & Nguyên tắc
-- **Mã QR tinh gọn**: Chỉ chứa dữ liệu thô là UID (ví dụ: `TB001`). **Không** chứa URL để tránh việc phải in lại nhãn mỗi khi thay đổi domain/server.
+- **Mã QR tinh gọn**: Chỉ chứa dữ liệu thô là UID (ví dụ: `TB001`). **Không** chứa URL.
 - **Hệ thống Hybrid**: 
-  - Frontend (Giao diện): Đặt trên GitHub Pages (Short URL: `https://vanhanh-ai.github.io/qr/`).
+  - Frontend (Giao diện): GitHub Pages (`https://vanhanh-ai.github.io/qr/`).
   - Backend (Database tạm): Google Sheets.
-- **Kết nối API**: Sử dụng Google Apps Script (GAS) làm cầu nối xử lý và ghi dữ liệu từ Frontend xuống Sheets.
-- **Đa phương thức nhập**: Hỗ trợ cả hai cách ngay tại màn hình chính:
-  1. Quét QR (bằng Camera thiết bị).
-  2. Nhập tay (Manual Input UID).
-- **Đa ngôn ngữ (i18n)**: Tích hợp chuyển đổi Tiếng Việt/Tiếng Anh mượt mà, lưu tùy chọn ngôn ngữ theo từng người dùng.
+- **Kết nối API**: GAS (Google Apps Script) làm cầu nối xử lý JSON/CORS.
+- **Offline First**: Cho phép lưu log tạm vào LocalStorage khi mất mạng và đồng bộ sau.
 
 ---
 
 ## 🗺️ Các Giai Đoạn Phát Triển
 
-### Phase 1: Xây dựng Frontend (GitHub Pages)
-- [ ] Khởi tạo giao diện tĩnh (HTML/CSS/JS) tối ưu cho Mobile.
-- [ ] Tích hợp thư viện quét mã QR (hỗ trợ camera điện thoại).
-- [ ] Xây dựng form nhập liệu thủ công cho UID.
-- [ ] Triển khai đa ngôn ngữ (i18n) với Tiếng Việt và Tiếng Anh (sử dụng LocalStorage để lưu trạng thái).
-- [ ] Xuất bản dự án lên GitHub Pages.
+### Phase 1: Xây dựng Frontend & Core UI ✅
+- [x] Khởi tạo giao diện tĩnh tối ưu cho Mobile (Glassmorphism UI).
+- [x] Tích hợp thư viện quét mã QR và hỗ trợ đèn Flash (Torch).
+- [x] Xây dựng form nhập liệu thủ công cho UID.
+- [x] Triển khai đa ngôn ngữ (i18n) Tiếng Việt/Tiếng Anh.
+- [x] Xuất bản lên GitHub Pages.
+- [x] Hệ thống **Remember Me** (Ghi nhớ đăng nhập).
 
-### Phase 2: Xây dựng GAS Backend & Google Sheets
-- [ ] Khởi tạo và thiết kế cấu trúc bảng tính Google Sheets:
-  - Bảng Lịch sử Báo cáo (UID, Ngày giờ, Vị trí, Tình trạng, Người báo).
-- [ ] Viết Google Apps Script (GAS) nhận HTTP POST request từ Frontend.
-- [ ] Xử lý lưu trữ dữ liệu vào bảng tính và trả về phản hồi (CORS, JSON response).
-- [ ] Deploy GAS dưới dạng Web App API endpoint.
-- [ ] Kết nối giao diện GitHub Pages để gọi API này.
+### Phase 2: GAS Backend & Robustness ✅
+- [x] Cấu trúc Google Sheets hoàn chỉnh: `Users`, `Devices`, `Logs`, `Checklists`, `WorkOrders`, `AuditLog`.
+- [x] Backend xử lý đa nhiệm: Đăng nhập, Ghi log, Quản lý Work Order, Đổi mật khẩu.
+- [x] **Robustness**: Xử lý lỗi crash trong Editor, trả về JSON chuẩn cho Frontend.
+- [x] **Diagnostic Tool**: Hàm `testConnection()` tự động kiểm tra cấu trúc database.
+- [x] **Security**: API Token bảo mật cho các truy vấn nhạy cảm.
 
-### Phase 3: Hệ thống Đồng bộ NAS (PostgreSQL)
-- [ ] Xây dựng script đồng bộ (`google-sheets-sync.ts` hoặc tương tự) chạy trên NAS.
-- [ ] Lên lịch Cron job trên NAS để tự động kéo dữ liệu từ Sheets về cơ sở dữ liệu PostgreSQL cục bộ.
-- [ ] Cập nhật trạng thái "đã đồng bộ" lên Sheets hoặc quản lý bằng timestamp.
+### Phase 3: Quản lý Nâng cao & UX 🔄 (In Progress)
+- [x] **Mini Log**: Hiển thị 5 hoạt động gần nhất của thiết bị ngay khi quét.
+- [x] **Inventory Status**: Chế độ In/Out nhanh (Nhập kho/Xuất lắp đặt).
+- [x] **Work Orders (Kanban)**: Giao diện quản lý phiếu sửa chữa dạng thẻ.
+- [x] **Haptic Feedback**: Rung và âm thanh khi quét thành công.
+- [ ] **Analytics Dashboard**: Biểu đồ thống kê tình trạng thiết bị (Doughnut chart).
+- [x] **Maintenance Schedule**: Tự động nhắc lịch bảo trì dựa trên `Cycle` ngày.
 
-### Phase 4: Test & Tối ưu
-- [ ] Kiểm thử quét mã vạch trong điều kiện thiếu sáng.
-- [ ] Thêm phản hồi UI (rung, âm thanh, popup) khi quét và gửi thành công.
-- [ ] Xử lý lưu cache (Offline fallback) nếu thiết bị mất mạng.
+### Phase 4: Đồng bộ NAS & Data Ownership 🚀 (Next Step)
+- [ ] Xây dựng script đồng bộ (Node.js/Python) chạy trên Synology NAS.
+- [ ] Tự động kéo dữ liệu từ Google Sheets về PostgreSQL cục bộ.
+- [ ] Xây dựng Webhook từ GAS để báo tin cho NAS khi có dữ liệu mới (Real-time sync).
+- [ ] Triển khai lưu trữ hình ảnh bảo trì lên NAS thay vì Google Drive.
+
+### Phase 5: Mở rộng & Tích hợp
+- [ ] Tích hợp thông báo qua Telegram/Zalo khi có Work Order khẩn cấp.
+- [ ] Chế độ Offline hoàn toàn (PWA - Progressive Web App).
+- [ ] Tích hợp AI chẩn đoán lỗi dựa trên hình ảnh báo cáo.
